@@ -398,11 +398,6 @@ void ef9345_device::bichrome40(uint8_t type, uint16_t address, uint8_t dial, uin
 	uint16_t i;
 	uint8_t pix[80];
 
-	if (m_variant == EF9345_MODE::TYPE_TS9347)
-	{
-		c0 = 0;
-	}
-
 	if (flash && m_pat & 0x40 && m_blink)
 		c1 = c0;                    //flash
 	if (conceal && m_pat & 0x08)
@@ -414,14 +409,22 @@ void ef9345_device::bichrome40(uint8_t type, uint16_t address, uint8_t dial, uin
 		c0 = i;
 	}
 
-	if ((m_pat & 0x30) == 0x30)
-		insert = 0;                 //active area mark
-	if (insert == 0)
-		c1 += 8;                    //foreground color
-	if ((m_pat & 0x30) == 0x00)
-		insert = 1;                 //insert mode
-	if (insert == 0)
-		c0 += 8;                    //background color
+	switch (m_pat & 0x30)           //insert mode
+	{
+	case 0x00: // inlay
+		if (insert == 0)
+			c0 = c1 = 0;            //fully black
+		else
+			c0 = 0;                 //make background black
+		break;
+	case 0x10: // boxing
+		if (insert == 0)
+			c0 = c1 = 0;            //fully black
+		break;
+	case 0x20: // character mark
+	case 0x30: // active area mark
+		break;
+	}
 
 	//draw the cursor
 	i = (m_registers[6] & 0x1f);
